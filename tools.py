@@ -31,8 +31,8 @@ class VulnerabilityResult:
 class RetrofitEstimate:
     intervention_type: str
     zone: str
-    approximate_sqft: float
-    approximate_m2: float
+    quantity: float
+    unit: str
     num_floors: int
     unit_cost_description: str
     estimated_cost_tk: float
@@ -164,6 +164,12 @@ COST_RATES = {
             "escalation": 1.015,
             "unit": "m2",
         },
+        "steel bracing work in-fill steel brace": {
+            "ground": 126000,
+            "first": 23966,
+            "escalation": 1.015,
+            "unit": "m2",
+        },
     },
     "zone 2": {
         "column jacketing (with footing)": {
@@ -174,6 +180,12 @@ COST_RATES = {
         },
         "shear walls (with footing)": {
             "ground": 75766.25,
+            "first": 23966,
+            "escalation": 1.015,
+            "unit": "m2",
+        },
+        "steel bracing work in-fill steel brace": {
+            "ground": 126000,
             "first": 23966,
             "escalation": 1.015,
             "unit": "m2",
@@ -210,15 +222,15 @@ COST_RATES = {
 
 def estimate_retrofit_cost(
     intervention_type: str,
-    approximate_sqft: float,
+    quantity: float,
     zone: str = "Zone 2",
     num_floors: int = 2,
 ) -> RetrofitEstimate:
     """Estimate retrofit cost based on the Excel cost table.
 
     Args:
-        intervention_type: e.g. "column jacketing" or "shear walls".
-        approximate_sqft: Approximate building footprint in square feet.
+        intervention_type: e.g. "Column Jacketing (with footing)" or "Shear Walls (with footing)".
+        quantity: The quantity of the work (e.g., meters of column, sqm of wall/frame) per floor.
         zone: The seismic/soil zone (Zone 1/2/3) used to choose rate table.
         num_floors: Number of floors for escalation cost computation.
 
@@ -242,39 +254,59 @@ def estimate_retrofit_cost(
             f"Intervention '{intervention_type}' not found for zone '{zone}'. Valid options: {valid}."
         )
 
-    # Convert sqft to m2 for area-based rates.
-    m2 = float(approximate_sqft) * 0.092903
-
     ground = rate_info["ground"]
     first = rate_info["first"]
     escalation = rate_info.get("escalation", 1.0)
     unit = rate_info.get("unit", "unit")
 
-    # Base cost is ground + first floor.
-    # For additional floors, apply multiplication by escalation per upper floor.
-    total_cost = ground + first
-    details = []
-    details.append(f"Ground floor: {ground:,.2f} Tk per {unit}")
-    details.append(f"First floor: {first:,.2f} Tk per {unit}")
+    details: list[str] = []
 
-    for additional_floor in range(2, num_floors):
-        multiplier = escalation ** (additional_floor - 1)
-        floor_rate = first * multiplier
-        total_cost += floor_rate
+    if ground == 0 and first == 0:
+        # PWD does not provide a rate; require engineering estimate.
         details.append(
-            f"Floor {additional_floor+1} (escalation {escalation:.3f}): {floor_rate:,.2f} Tk per {unit}"
+            "PWD does not provide a rate for this intervention. Please consult an experienced structural engineer and provide drawings for a reliable estimate."
+        )
+        return RetrofitEstimate(
+            intervention_type=intervention_type,
+            zone=zone,
+            quantity=quantity,
+            unit=unit,
+            num_floors=num_floors,
+            unit_cost_description=f"No PWD rate (consult engineer)",
+            estimated_cost_tk=0.0,
+            details="; ".join(details),
         )
 
-    # Convert to actual cost for the building footprint.
-    estimated_cost = total_cost * m2
+    # Cost per unit (m or m2) per floor.
+    total_cost = 0.0
+
+    # Ground floor
+    ground_cost = ground * quantity
+    total_cost += ground_cost
+    details.append(f"Ground floor: {ground:,.2f} Tk per {unit} => {ground_cost:,.2f} Tk")
+
+    # First floor
+    first_cost = first * quantity
+    total_cost += first_cost
+    details.append(f"First floor: {first:,.2f} Tk per {unit} => {first_cost:,.2f} Tk")
+
+    # Additional floors (2nd above ground and beyond)
+    for floor_index in range(2, num_floors):
+        multiplier = escalation ** (floor_index - 1)
+        floor_rate = first * multiplier
+        floor_cost = floor_rate * quantity
+        total_cost += floor_cost
+        details.append(
+            f"Floor {floor_index + 1} (escalation {escalation:.3f}): {floor_rate:,.2f} Tk per {unit} => {floor_cost:,.2f} Tk"
+        )
 
     return RetrofitEstimate(
         intervention_type=intervention_type,
         zone=zone,
-        approximate_sqft=approximate_sqft,
-        approximate_m2=m2,
+        quantity=quantity,
+        unit=unit,
         num_floors=num_floors,
         unit_cost_description=f"Rates per {unit} (ground/first+escalation)",
-        estimated_cost_tk=estimated_cost,
+        estimated_cost_tk=total_cost,
         details="; ".join(details),
     )

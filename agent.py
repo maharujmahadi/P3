@@ -77,7 +77,7 @@ def _get_tool_definitions() -> List[Dict[str, Any]]:
                 "name": "estimate_retrofit_cost",
                 "description": (
                     "Provide a rough retrofit cost estimate based on a selected intervention type, "
-                    "building footprint (sqft), zone, and number of floors."
+                    "a quantity (in meters or sqm depending on the method), zone, and number of floors."
                 ),
                 "parameters": {
                     "type": "object",
@@ -86,9 +86,9 @@ def _get_tool_definitions() -> List[Dict[str, Any]]:
                             "type": "string",
                             "description": "Selected retrofit method (e.g., 'Shear Walls (with footing)', 'Column Jacketing (with footing)', 'Deep foundation retrofitting').",
                         },
-                        "approximate_sqft": {
+                        "quantity": {
                             "type": "number",
-                            "description": "Approximate building footprint in square feet.",
+                            "description": "Quantity of work per floor (e.g., meters of columns, sqm of walls).",
                         },
                         "zone": {
                             "type": "string",
@@ -101,7 +101,7 @@ def _get_tool_definitions() -> List[Dict[str, Any]]:
                     },
                     "required": [
                         "intervention_type",
-                        "approximate_sqft",
+                        "quantity",
                         "zone",
                         "num_floors",
                     ],
@@ -164,7 +164,7 @@ def _execute_tool_call(name: str, arguments: Dict[str, Any]) -> Tuple[str, Any]:
     if name == "estimate_retrofit_cost":
         result = estimate_retrofit_cost(
             intervention_type=arguments.get("intervention_type", ""),
-            approximate_sqft=float(arguments.get("approximate_sqft", 0)),
+            quantity=float(arguments.get("quantity", 0)),
             zone=arguments.get("zone", "Zone 2"),
             num_floors=int(arguments.get("num_floors", 2)),
         )
@@ -173,8 +173,8 @@ def _execute_tool_call(name: str, arguments: Dict[str, Any]) -> Tuple[str, Any]:
             {
                 "intervention_type": result.intervention_type,
                 "zone": result.zone,
-                "approximate_sqft": result.approximate_sqft,
-                "approximate_m2": result.approximate_m2,
+                "quantity": result.quantity,
+                "unit": result.unit,
                 "num_floors": result.num_floors,
                 "estimated_cost_tk": result.estimated_cost_tk,
                 "details": result.details,
@@ -191,9 +191,9 @@ def run_building_consultant(user_message: str) -> str:
         "You are a rigorous structural vulnerability consultant focused on Dhaka city (Bangladesh). "
         "You must NEVER invent scoring or cost results yourself; instead, you must call the provided tools and use their deterministic output. "
         "When a user describes a building, you MUST do the following in this order: "
-        "(1) extract the required parameters (zone, construction year, soft story condition, structure type, approximate footprint, number of floors), "
+        "(1) extract the required parameters (zone, construction year, soft story condition, structure type, quantity of work, number of floors), "
         "(2) call the function calculate_vulnerability_score with those parameters, "
-        "(3) based on the returned risk tier, choose a fitting retrofit intervention and call estimate_retrofit_cost (zone and floors must be consistent with the building description), "
+        "(3) based on the returned risk tier, choose a fitting retrofit intervention and call estimate_retrofit_cost (zone, quantity, and floors must be consistent with the building description), "
         "(4) generate a final human-readable report that cites the research tables and clearly explains how the score and cost were derived. "
         "If any required parameter is missing or unclear, ask the user a clarifying question instead of guessing."
     )

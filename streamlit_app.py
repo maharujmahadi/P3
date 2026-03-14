@@ -54,22 +54,51 @@ def _run_manual_ui() -> None:
         )
 
     with col2:
-        approx_sqft = st.number_input("Approximate Footprint (sqft)", min_value=100.0, value=1000.0)
         num_floors = st.number_input("Number of Floors", min_value=1, max_value=20, value=1)
+
         # Dynamic intervention options based on selected zone (from Excel Cost Table)
         intervention_options = {
-            "Zone 1": ["Column Jacketing (with footing)", "Shear Walls (with footing)", "steel bracing work in-fill steel brace "],
-            "Zone 2": ["Column Jacketing (with footing)", "Shear Walls (with footing)", "steel bracing work in-fill steel brace "],
-            "Zone 3": ["Shear Walls (with footing)", "Deep foundation piles", "Soil Stabilization (Deep soil mixing, jet grouting)"],
+            "Zone 1": [
+                "Column Jacketing (with footing)",
+                "Shear Walls (with footing)",
+                "Steel bracing work in-fill steel brace",
+            ],
+            "Zone 2": [
+                "Column Jacketing (with footing)",
+                "Shear Walls (with footing)",
+                "Steel bracing work in-fill steel brace",
+                "Deep foundation retrofitting",
+            ],
+            "Zone 3": [
+                "Shear Walls (with footing)",
+                "Deep foundation piles",
+                "Soil stabilization",
+            ],
         }
         intervention = st.selectbox(
             "Retrofit Intervention",
-            intervention_options.get(zone, ["Shear Walls (with footing)"]),  # Default fallback
+            intervention_options.get(zone, ["Shear Walls (with footing)"],),
+        )
+
+        unit_labels = {
+            "Column Jacketing (with footing)": "meters of column",
+            "Shear Walls (with footing)": "sqm of shear wall",
+            "Steel bracing work in-fill steel brace": "sqm of frame",
+            "Deep foundation retrofitting": "(consult engineer)",
+            "Deep foundation piles": "(consult engineer)",
+            "Soil stabilization": "(consult engineer)",
+        }
+        unit_label = unit_labels.get(intervention, "unit")
+
+        quantity = st.number_input(
+            f"Quantity ({unit_label})",
+            min_value=0.0,
+            value=100.0 if "sqm" in unit_label or "meters" in unit_label else 0.0,
         )
 
     if st.button("Compute Vulnerability + Cost"):
         vuln = calculate_vulnerability_score(zone, int(construction_year), soft_story, structure_type)
-        cost = estimate_retrofit_cost(intervention, float(approx_sqft), zone=zone, num_floors=int(num_floors))
+        cost = estimate_retrofit_cost(intervention, float(quantity), zone=zone, num_floors=int(num_floors))
 
         st.subheader("Vulnerability Score")
         st.write(
@@ -80,7 +109,7 @@ def _run_manual_ui() -> None:
 
         st.subheader("Retrofit Cost Estimate")
         st.write(f"**Intervention:** {cost.intervention_type}")
-        st.write(f"**Approx. area:** {cost.approximate_sqft:,.0f} sqft ({cost.approximate_m2:,.1f} m²)")
+        st.write(f"**Quantity:** {cost.quantity:,.1f} {cost.unit}")
         st.write(f"**Estimated cost:** {_format_currency(cost.estimated_cost_tk)}")
         st.write("**Cost details:**")
         st.write(cost.details)

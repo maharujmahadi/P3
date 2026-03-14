@@ -10,7 +10,7 @@ This project builds a simple Streamlit web app that:
 
 ### ✅ Deterministic Python tools
 - `calculate_vulnerability_score(soil_type, construction_year, soft_story, structure_type)`
-- `estimate_retrofit_cost(intervention_type, approximate_sqft, zone, num_floors)`
+- `estimate_retrofit_cost(intervention_type, quantity, zone, num_floors)`  (quantity is in meters or sqm depending on method)
 
 These functions follow the logic extracted from the Excel sheets in `Assignment Final.xlsx`.
 
