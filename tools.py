@@ -152,13 +152,13 @@ def calculate_vulnerability_score(
 # We keep a simplified cost database; the full table can be extended easily.
 COST_RATES = {
     "zone 1": {
-        "column jacketing": {
+        "column jacketing (with footing)": {
             "ground": 94232.5,
             "first": 45595,
             "escalation": 1.015,
             "unit": "m",
         },
-        "shear walls": {
+        "shear walls (with footing)": {
             "ground": 75766.25,
             "first": 23966,
             "escalation": 1.015,
@@ -166,25 +166,43 @@ COST_RATES = {
         },
     },
     "zone 2": {
-        "column jacketing": {
+        "column jacketing (with footing)": {
             "ground": 94232.5,
             "first": 45595,
             "escalation": 1.015,
             "unit": "m",
         },
-        "shear walls": {
+        "shear walls (with footing)": {
             "ground": 75766.25,
             "first": 23966,
             "escalation": 1.015,
             "unit": "m2",
         },
+        "deep foundation retrofitting": {
+            "ground": 0,  # Not in PWD, separate estimate
+            "first": 0,
+            "escalation": 1.0,
+            "unit": "unit",
+        },
     },
     "zone 3": {
-        "shear walls": {
+        "shear walls (with footing)": {
             "ground": 75766.25,
             "first": 23966,
             "escalation": 1.015,
             "unit": "m2",
+        },
+        "deep foundation piles": {
+            "ground": 0,  # Not in PWD, separate estimate
+            "first": 0,
+            "escalation": 1.0,
+            "unit": "unit",
+        },
+        "soil stabilization": {
+            "ground": 0,  # Not in PWD, separate estimate
+            "first": 0,
+            "escalation": 1.0,
+            "unit": "unit",
         },
     },
 }

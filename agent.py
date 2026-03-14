@@ -84,7 +84,7 @@ def _get_tool_definitions() -> List[Dict[str, Any]]:
                     "properties": {
                         "intervention_type": {
                             "type": "string",
-                            "description": "Selected retrofit method (e.g., 'Shear Walls', 'Column Jacketing').",
+                            "description": "Selected retrofit method (e.g., 'Shear Walls (with footing)', 'Column Jacketing (with footing)', 'Deep foundation retrofitting').",
                         },
                         "approximate_sqft": {
                             "type": "number",
